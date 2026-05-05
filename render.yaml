@@ -1,0 +1,48 @@
+services:
+  - type: pserv
+    name: erpnext-db
+    plan: free
+    runtime: image
+    repo: https://github.com/rungano-rgit/furniture-erp
+    dockerContext: .
+    dockerfilePath: ./Dockerfile.db
+    envVars:
+      - key: DB_PASSWORD
+        generateValue: true
+
+  - type: pserv
+    name: erpnext-redis-cache
+    plan: free
+    runtime: image
+    repo: https://github.com/rungano-rgit/furniture-erp
+    dockerContext: .
+    dockerfilePath: ./Dockerfile.redis
+    envVars:
+      - key: REDIS_PASSWORD
+        generateValue: true
+
+  - type: web
+    name: erpnext-app
+    plan: free
+    runtime: image
+    repo: https://github.com/rungano-rgit/furniture-erp
+    dockerContext: .
+    dockerfilePath: ./Dockerfile.app
+    envVars:
+      - key: DB_HOST
+        fromService:
+          name: erpnext-db
+          type: pserv
+          property: host
+      - key: DB_PASSWORD
+        fromService:
+          name: erpnext-db
+          type: pserv
+          property: env
+          key: DB_PASSWORD
+      - key: REDIS_PASSWORD
+        fromService:
+          name: erpnext-redis-cache
+          type: pserv
+          property: env
+          key: REDIS_PASSWORD
