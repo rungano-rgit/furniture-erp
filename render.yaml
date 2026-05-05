@@ -3,20 +3,20 @@ services:
     name: erpnext-db
     plan: free
     runtime: image
-    repo: https://github.com/rungano-rgit/furniture-erp
-    dockerContext: .
-    dockerfilePath: ./Dockerfile.db
+    image:
+      url: mariadb:10.6
     envVars:
-      - key: DB_PASSWORD
+      - key: MYSQL_ROOT_PASSWORD
         generateValue: true
+      - key: MYSQL_DATABASE
+        value: erpnext
 
   - type: pserv
     name: erpnext-redis-cache
     plan: free
     runtime: image
-    repo: https://github.com/rungano-rgit/furniture-erp
-    dockerContext: .
-    dockerfilePath: ./Dockerfile.redis
+    image:
+      url: redis:6.2-alpine
     envVars:
       - key: REDIS_PASSWORD
         generateValue: true
@@ -25,9 +25,8 @@ services:
     name: erpnext-app
     plan: free
     runtime: image
-    repo: https://github.com/rungano-rgit/furniture-erp
-    dockerContext: .
-    dockerfilePath: ./Dockerfile.app
+    image:
+      url: frappe/erpnext:v15
     envVars:
       - key: DB_HOST
         fromService:
@@ -38,11 +37,33 @@ services:
         fromService:
           name: erpnext-db
           type: pserv
-          property: env
-          key: DB_PASSWORD
+          property: connectionString
+          prefix: "mysql://root:"
+          suffix: "@"
       - key: REDIS_PASSWORD
         fromService:
           name: erpnext-redis-cache
           type: pserv
-          property: env
-          key: REDIS_PASSWORD
+          property: connectionString
+          prefix: "redis://default:"
+          suffix: "@"
+      - key: MARIADB_HOST
+        fromService:
+          name: erpnext-db
+          type: pserv
+          property: host
+      - key: REDIS_CACHE
+        fromService:
+          name: erpnext-redis-cache
+          type: pserv
+          property: connectionString
+      - key: REDIS_QUEUE
+        fromService:
+          name: erpnext-redis-cache
+          type: pserv
+          property: connectionString
+      - key: REDIS_SOCKETIO
+        fromService:
+          name: erpnext-redis-cache
+          type: pserv
+          property: connectionString
