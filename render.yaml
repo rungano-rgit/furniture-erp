@@ -12,14 +12,13 @@ services:
       - key: MYSQL_DATABASE
         value: erpnext
 
-  # Redis Cache
+  # Redis Cache - No command field needed
   - type: pserv
     name: erpnext-redis
     plan: free
     runtime: image
     image:
       url: redis:6.2-alpine
-    command: redis-server --requirepass ${REDIS_PASSWORD}
     envVars:
       - key: REDIS_PASSWORD
         generateValue: true
@@ -68,7 +67,7 @@ services:
           type: pserv
           property: port
       
-      # Computed connection strings (ERPNext needs these)
+      # Computed connection strings using variable substitution
       - key: REDIS_CACHE
         value: redis://default:${REDIS_PASSWORD}@${REDIS_HOST}:${REDIS_PORT}
       - key: REDIS_QUEUE
