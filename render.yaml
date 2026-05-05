@@ -1,4 +1,5 @@
 services:
+  # Database - MariaDB
   - type: pserv
     name: erpnext-db
     plan: free
@@ -11,16 +12,19 @@ services:
       - key: MYSQL_DATABASE
         value: erpnext
 
+  # Redis Cache
   - type: pserv
-    name: erpnext-redis-cache
+    name: erpnext-redis
     plan: free
     runtime: image
     image:
       url: redis:6.2-alpine
+    command: redis-server --requirepass ${REDIS_PASSWORD}
     envVars:
       - key: REDIS_PASSWORD
         generateValue: true
 
+  # Main ERPNext Application
   - type: web
     name: erpnext-app
     plan: free
@@ -28,42 +32,46 @@ services:
     image:
       url: frappe/erpnext:v15
     envVars:
-      - key: DB_HOST
+      # Database connection
+      - key: MARIADB_ROOT_PASSWORD
         fromService:
           name: erpnext-db
           type: pserv
-          property: host
-      - key: DB_PASSWORD
-        fromService:
-          name: erpnext-db
-          type: pserv
-          property: connectionString
-          prefix: "mysql://root:"
-          suffix: "@"
-      - key: REDIS_PASSWORD
-        fromService:
-          name: erpnext-redis-cache
-          type: pserv
-          property: connectionString
-          prefix: "redis://default:"
-          suffix: "@"
+          property: env
+          key: MYSQL_ROOT_PASSWORD
       - key: MARIADB_HOST
         fromService:
           name: erpnext-db
           type: pserv
           property: host
+      - key: MARIADB_PORT
+        fromService:
+          name: erpnext-db
+          type: pserv
+          property: port
+      
+      # Redis connections
+      - key: REDIS_PASSWORD
+        fromService:
+          name: erpnext-redis
+          type: pserv
+          property: env
+          key: REDIS_PASSWORD
+      - key: REDIS_HOST
+        fromService:
+          name: erpnext-redis
+          type: pserv
+          property: host
+      - key: REDIS_PORT
+        fromService:
+          name: erpnext-redis
+          type: pserv
+          property: port
+      
+      # Computed connection strings (ERPNext needs these)
       - key: REDIS_CACHE
-        fromService:
-          name: erpnext-redis-cache
-          type: pserv
-          property: connectionString
+        value: redis://default:${REDIS_PASSWORD}@${REDIS_HOST}:${REDIS_PORT}
       - key: REDIS_QUEUE
-        fromService:
-          name: erpnext-redis-cache
-          type: pserv
-          property: connectionString
+        value: redis://default:${REDIS_PASSWORD}@${REDIS_HOST}:${REDIS_PORT}
       - key: REDIS_SOCKETIO
-        fromService:
-          name: erpnext-redis-cache
-          type: pserv
-          property: connectionString
+        value: redis://default:${REDIS_PASSWORD}@${REDIS_HOST}:${REDIS_PORT}
