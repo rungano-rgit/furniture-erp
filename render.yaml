@@ -1,27 +1,26 @@
 services:
-  # Database - MariaDB
+  # Database - Using Render's PostgreSQL (better supported)
   - type: pserv
     name: erpnext-db
     plan: free
     runtime: image
     image:
-      url: mariadb:10.6
+      url: postgres:15
     envVars:
-      - key: MYSQL_ROOT_PASSWORD
+      - key: POSTGRES_PASSWORD
         generateValue: true
-      - key: MYSQL_DATABASE
+      - key: POSTGRES_DB
+        value: erpnext
+      - key: POSTGRES_USER
         value: erpnext
 
-  # Redis Cache - No command field needed
+  # Redis Cache
   - type: pserv
     name: erpnext-redis
     plan: free
     runtime: image
     image:
-      url: redis:6.2-alpine
-    envVars:
-      - key: REDIS_PASSWORD
-        generateValue: true
+      url: redis:7-alpine
 
   # Main ERPNext Application
   - type: web
@@ -31,31 +30,16 @@ services:
     image:
       url: frappe/erpnext:v15
     envVars:
-      # Database connection
-      - key: MARIADB_ROOT_PASSWORD
-        fromService:
-          name: erpnext-db
-          type: pserv
-          property: env
-          key: MYSQL_ROOT_PASSWORD
-      - key: MARIADB_HOST
+      - key: POSTGRES_HOST
         fromService:
           name: erpnext-db
           type: pserv
           property: host
-      - key: MARIADB_PORT
+      - key: POSTGRES_PORT
         fromService:
           name: erpnext-db
           type: pserv
           property: port
-      
-      # Redis connections
-      - key: REDIS_PASSWORD
-        fromService:
-          name: erpnext-redis
-          type: pserv
-          property: env
-          key: REDIS_PASSWORD
       - key: REDIS_HOST
         fromService:
           name: erpnext-redis
@@ -66,11 +50,3 @@ services:
           name: erpnext-redis
           type: pserv
           property: port
-      
-      # Computed connection strings using variable substitution
-      - key: REDIS_CACHE
-        value: redis://default:${REDIS_PASSWORD}@${REDIS_HOST}:${REDIS_PORT}
-      - key: REDIS_QUEUE
-        value: redis://default:${REDIS_PASSWORD}@${REDIS_HOST}:${REDIS_PORT}
-      - key: REDIS_SOCKETIO
-        value: redis://default:${REDIS_PASSWORD}@${REDIS_HOST}:${REDIS_PORT}
